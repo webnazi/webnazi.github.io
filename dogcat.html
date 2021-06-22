@@ -1,0 +1,97 @@
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8" />
+  
+<style>
+body {
+   font-size: 12px;
+   background-color: black;
+   color: white;margin:0;}
+ a {
+   color: white;}
+* {
+  box-sizing: border-box;
+}
+a {
+  color: white;
+  font-weight: bold;
+  text-decoration: none;
+}
+a:hover, a:active {
+  color: #868686;
+  text-decoration:none;
+}
+</style></head><body><pre><center>
+<a href="index.html" style="text-decration:none;">
+
+┏┓┏┓┏┳━┓╋┏┓
+┃┃┃┃┃┃┃┗┓┃┃
+┃┃┃┃┃┃┏┓┗┛┃
+┃┗┛┗┛┃┃┗┓┃┃
+┗┓┏┓┏┫┃╋┃┃┃
+╋┗┛┗┛┗┛╋┗━┛
+
+<div style="font-size:14px; text-align:center; font-family:courier,slab;"> 
+So The page is just blank with two buttons leading to a random image of a dog or cat.
+
+
+
+Local File Inclusion (LFI)
+Having a look at the url I saw that the page was running on php and the pictures are stored in the 
+dogs/ and cats/ folder, which passes the value "dog" or "cat" to the variable "view"
+eg. /?view=dog and /?view=cat. So I try basic LFI (Local file inclusion) 
+to attempt to view /etc/passwd 
+eg. https://10.10.233.109/../../../../../../etc/passwd
+But I fail due to it relating "Sorry only dogs or cats are allowed" 
+So then I check for a string dog or cat in the provided value of "view". 
+I try adding "dog" after a null byte %00 which passes the string check, 
+but is not evaluated when showing the file. I then realize that I indeed did bypass 
+the string check but it didnt open a file? 
+After a bit of me fiddling around, I see that I am able to check the source of the index.php 
+file using directory traversal. 
+eg. https://10.10.233.109/?view=php://filter/convert.base64-encode/resource=dog/../index
+So now I check if I cam able to read the /etc/passwd file by using 
+the request https://10.10.233.109/?view=dog/../../../../etc/passwd&ext= 
+And I am successful
+
+Log Poisoning
+So the log that logs all my requests, was found by me in /var/log/apache2/acess.log. 
+So then I see that it saves my user agent header. So i saw if i could inject some 
+sort of php code in the header so that it will get executed along with the main php file. 
+So then i used burp, and managed to change header to "qwom is gay but bae" to test. 
+Then i tested some php commands, but then it broke the machine and I couldnt see the log?? 
+Then i tried cmd and got command execution. 
+I get the reverse shell, and immediately found flag.php in the current folder. 
+I cat the contents and found the first flag. 
+After digging around a little more I found my second flag in the /var/www directory
+
+Priviledge Escalation
+After seeing that I can execute /usr/bin/env as sudo using sudo -l, 
+I look for private escalation in "gtfobins." 
+I find that simply "env /bin/sh" grants me the shell I escalated to root successfully, 
+and began looking for the remaining flags. 
+I find my 3rd flag in the /root directory. 
+While looking around, I find a .dockerenv file in the root dir, which signals to us 
+that I am inside a docker container. After fiddling for a bit more I find a folder 
+in the /opt/backups dir. I find something that says 
+"tar cf /root/container/backup/backup.tar /root/container.  
+So i see that the script backs up the /root/container to the backup.tar file I found. 
+Possibly running a cron job. I see that I have written permissions to the file and 
+I try to write a rev shell into the backup.sh file. 
+I open a listener on 8888 and get a shell back from the root. 
+I can see that I am on the machine itself and not inside a container. 
+Going into /root i find my 4th and final flag
+
+
+Skills Utilized: Local File Inclusion, Command Execution, Log Poisoning, Priviledge Escalation
+TryHackMe Difficulty: Medium 
+
+
+ 
+ </div>
+</pre>
+</center>
+</body>
+</html>
